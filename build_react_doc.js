@@ -91,24 +91,31 @@ function divider() {
   });
 }
 
-function twoColTable(rows) {
+function flexibleTable(rows) {
+  const TOTAL_WIDTH = 9720; // Available width within margins
   const border = { style: BorderStyle.SINGLE, size: 1, color: "BDBDBD" };
   const borders = { top: border, bottom: border, left: border, right: border };
+  
+  // Determine max columns in the dataset to calculate width
+  const maxCols = Math.max(...rows.map(r => r.length));
+  const colWidth = Math.floor(TOTAL_WIDTH / maxCols);
 
   return new Table({
-    width: { size: 9360, type: WidthType.DXA },
-    columnWidths: [4680, 4680],
+    width: { size: TOTAL_WIDTH, type: WidthType.DXA },
+    columnWidths: Array(maxCols).fill(colWidth),
     rows: rows.map((row, i) => new TableRow({
       children: row.map(cell => new TableCell({
         borders,
-        width: { size: 4680, type: WidthType.DXA },
+        width: { size: colWidth, type: WidthType.DXA },
         shading: { fill: i === 0 ? MID : (i % 2 === 0 ? LIGHT : WHITE), type: ShadingType.CLEAR },
-        margins: { top: 80, bottom: 80, left: 120, right: 120 },
+        margins: { top: 120, bottom: 120, left: 120, right: 120 },
+        verticalAlign: VerticalAlign.CENTER,
         children: [new Paragraph({
+          alignment: AlignmentType.LEFT,
           children: [new TextRun({
             text: cell,
             bold: i === 0,
-            size: i === 0 ? 22 : 20,
+            size: i === 0 ? 20 : 18,
             font: "Arial",
             color: i === 0 ? DARK : "212121"
           })]
@@ -235,7 +242,7 @@ const doc = new Document({
       // 5. REST vs GraphQL
       h2("5. REST vs GraphQL"),
       body("Choosing between REST and GraphQL is a choice between endpoint stability and client-side flexibility."),
-      twoColTable([
+      flexibleTable([
         ["Criteria", "REST", "GraphQL"],
         ["Fetching", "Multiple endpoints (GET /users, /posts)", "Single endpoint (/graphql)"],
         ["Over-fetching", "Common: returns entire user object", "None: client selects specific fields"],
@@ -351,7 +358,7 @@ const doc = new Document({
       // 15. CSR vs SSR vs SSG vs ISR
       h2("15. CSR vs SSR vs SSG vs ISR"),
       body("Modern frameworks like Next.js allow you to mix and match these strategies per page."),
-      twoColTable([
+      flexibleTable([
         ["Strategy", "Best For", "Trade-off"],
         ["CSR (Client)", "Private dashboards", "Slow first paint, poor SEO"],
         ["SSR (Server)", "Dynamic news/feeds", "Higher server load, TTFB delay"],
