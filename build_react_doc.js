@@ -71,11 +71,18 @@ function note(text) {
 }
 
 function code(text) {
+  const lines = text.trim().split('\n');
   return new Paragraph({
     spacing: { before: 60, after: 80 },
     indent: { left: 360, right: 360 },
     shading: { fill: "F5F5F5", type: ShadingType.CLEAR },
-    children: [new TextRun({ text, font: "Courier New", size: 18, color: "C62828" })]
+    children: lines.map((line, i) => new TextRun({
+      text: line,
+      font: "Courier New",
+      size: 18,
+      color: "C62828",
+      break: i > 0 ? 1 : 0
+    }))
   });
 }
 
@@ -262,7 +269,12 @@ const doc = new Document({
       bullet("Always implement server-side pagination for lists exceeding 100 items."),
       bullet("Use 'skeletons' or 'shimmer' effects to maintain layout stability during page transitions."),
       bullet("Synchronize the page state with the URL (e.g., ?page=2) to allow users to share specific views."),
-      code("const fetchPage = async (page) => { const res = await fetch(`/api/data?page=${page}`); return res.json(); };"),
+      code(`
+const fetchPage = async (page) => {
+  const res = await fetch(\`/api/data?page=\${page}\`);
+  return res.json();
+};
+      `),
       space(),
 
       // 2. Infinite Scroll
@@ -284,7 +296,23 @@ const doc = new Document({
       bullet("Mechanism: Every time the event fires, we clear the existing timer and start a new one. The function only executes if the timer reaches its duration without being cleared."),
       bullet("Search-as-you-type: A classic use case. Without debouncing, a 10-letter search would trigger 10 API calls. With a 300ms debounce, it triggers exactly one."),
       h3("Custom Hook Implementation"),
-      code("function useDebounce(value, delay) { const [debouncedValue, setDebouncedValue] = useState(value); useEffect(() => { const handler = setTimeout(() => setDebouncedValue(value), delay); return () => clearTimeout(handler); }, [value, delay]); return debouncedValue; }"),
+      code(`
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+      `),
       note("Interview Tip: Be ready to explain the difference between Debouncing (waits for a pause) and Throttling (enforces a maximum frequency)."),
       space(),
 
@@ -362,7 +390,7 @@ const doc = new Document({
       h3("Benefits"),
       bullet("Reduction in 'Main Thread' blockage: By shipping less JS initially, the browser can parse and execute code faster."),
       bullet("Improved FCP (First Contentful Paint): The user sees the 'shell' of the app sooner."),
-      code("const MyChart = React.lazy(() => import('./MyChart'));"),
+      code(`const MyChart = React.lazy(() => import('./MyChart'));`),
       space(),
 
       // 10. Code Splitting
@@ -552,9 +580,14 @@ const doc = new Document({
 
       h2("1.3 React Portals & Fragments"),
       body("Portals let you render a child component into a DOM node that lives outside the parent's hierarchy — ideal for modals, tooltips, and drawers that must escape overflow:hidden or z-index stacking contexts."),
-      code("ReactDOM.createPortal(<Modal />, document.getElementById('portal-root'))"),
+      code(`ReactDOM.createPortal(<Modal />, document.getElementById('portal-root'))`),
       body("Fragments group children without adding extra DOM nodes, keeping the DOM clean and avoiding CSS layout side-effects."),
-      code("<>  <ChildA />  <ChildB />  </>"),
+      code(`
+<>
+  <ChildA />
+  <ChildB />
+</>
+      `),
       space(),
 
       h2("1.4 React Suspense"),
@@ -586,7 +619,7 @@ const doc = new Document({
 
       h3("useState"),
       body("Declares a state variable and its setter. Setter calls schedule a re-render."),
-      code("const [count, setCount] = useState(0);"),
+      code(`const [count, setCount] = useState(0);`),
       space(),
 
       h3("useEffect"),
@@ -594,7 +627,11 @@ const doc = new Document({
       bullet("Empty dependency array [] → runs once on mount."),
       bullet("With dependencies [dep] → runs when dep changes."),
       bullet("Return a cleanup function for subscriptions, timers, event listeners."),
-      code("useEffect(() => { fetchData(); }, [query]);"),
+      code(`
+useEffect(() => {
+  fetchData();
+}, [query]);
+      `),
       space(),
 
       h3("useMemo & useCallback — Memoization"),
@@ -602,8 +639,8 @@ const doc = new Document({
       bullet("useMemo — prevents recomputing expensive derived data on every render."),
       bullet("useCallback — prevents child components from re-rendering when a stable function reference is passed as a prop."),
       bullet("Only memoize when profiling reveals a genuine performance bottleneck — premature memoization adds complexity."),
-      code("const sorted = useMemo(() => expensiveSort(data), [data]);"),
-      code("const handler = useCallback(() => doThing(id), [id]);"),
+      code(`const sorted = useMemo(() => expensiveSort(data), [data]);`),
+      code(`const handler = useCallback(() => doThing(id), [id]);`),
       space(),
 
       h3("useReducer"),
@@ -620,7 +657,7 @@ const doc = new Document({
 
       h3("useParams (React Router)"),
       body("Extracts URL parameters from the current matched route. Returns a key-value object of dynamic segments."),
-      code("const { id } = useParams(); // /users/:id"),
+      code(`const { id } = useParams(); // /users/:id`),
       space(),
 
       h2("2.3 Side Effects"),
@@ -712,7 +749,7 @@ const doc = new Document({
       bullet("React.lazy() dynamically imports a component. Always pair with <Suspense fallback={...}>."),
       bullet("Route-level lazy loading is the highest-impact pattern — each route chunk loads only when navigated to."),
       bullet("Images: use loading='lazy' on <img> or the IntersectionObserver API for custom triggers."),
-      code("const Dashboard = React.lazy(() => import('./Dashboard'));"),
+      code(`const Dashboard = React.lazy(() => import('./Dashboard'));`),
       space(),
 
       h2("5.2 Code Splitting"),
@@ -767,7 +804,7 @@ const doc = new Document({
       bullet("Common use cases: search-as-you-type, resize/scroll handlers, form autosave."),
       bullet("Implement with a setTimeout that resets on each call, or use lodash.debounce / use-debounce."),
       bullet("Throttling is the related pattern — it guarantees the function runs at most once per interval, regardless of how many calls occur."),
-      code("const debouncedSearch = useDebounce(searchTerm, 300);"),
+      code(`const debouncedSearch = useDebounce(searchTerm, 300);`),
       space(),
 
       h2("5.8 Image Optimization"),
