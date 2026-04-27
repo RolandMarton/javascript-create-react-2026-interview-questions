@@ -287,6 +287,14 @@ const fetchPage = async (page) => {
       bullet("Avoid infinite scroll for data-heavy admin tables where users need to find specific records reliably."),
       bullet("Ensure a 'Loading' state is visible so users don't think the app has crashed at the end of the list."),
       bullet("Consider the 'Load More' button pattern for mobile users to save battery and data usage."),
+      code(`
+const observer = new IntersectionObserver((entries) => {
+  if (entries[0].isIntersecting && hasMore) {
+    fetchNextPage();
+  }
+});
+observer.observe(sentinelRef.current);
+      `),
       space(),
 
       // 3. Debouncing
@@ -326,6 +334,13 @@ function useDebounce(value, delay) {
       h3("Scalability Challenges"),
       bullet("Load Balancing: Unlike HTTP, WebSockets are stateful. You need 'sticky sessions' or a shared state backplane (Redis) to route messages to the correct server instance."),
       bullet("Security: Use 'wss://' (TLS) to prevent injection attacks and snooping."),
+      code(`
+const socket = new WebSocket('wss://example.com/socket');
+socket.onmessage = (event) => {
+  console.log('Message from server:', event.data);
+};
+socket.send(JSON.stringify({ type: 'GREETING', payload: 'Hello Server!' }));
+      `),
       space(),
 
       // 5. REST vs GraphQL
@@ -343,6 +358,17 @@ function useDebounce(value, delay) {
       bullet("Large, complex data models with deep nesting."),
       bullet("Mobile clients where minimizing payload size and network round-trips is critical."),
       bullet("Rapidly evolving UIs where front-end teams need to change data requirements without back-end changes."),
+      code(`
+query GetUserPosts($userId: ID!) {
+  user(id: $userId) {
+    name
+    posts {
+      title
+      comments { text }
+    }
+  }
+}
+      `),
       space(),
 
       // 6. Local Storage vs Cookies
@@ -355,6 +381,13 @@ function useDebounce(value, delay) {
       bullet("Never store JWTs or session IDs in Local Storage."),
       bullet("Use Cookies with 'HttpOnly', 'Secure', and 'SameSite=Strict' for all sensitive authentication tokens."),
       bullet("Use IndexedDB for large datasets (e.g., offline-first PWA data)."),
+      code(`
+// Local Storage
+localStorage.setItem('theme', 'dark');
+
+// Cookie (Secure, HttpOnly usually set by server)
+document.cookie = "user_pref=dark; SameSite=Strict; Secure";
+      `),
       space(),
 
       // 7. Authentication vs Authorization
@@ -367,6 +400,15 @@ function useDebounce(value, delay) {
       bullet("OAuth 2.0: An authorization framework for delegating access."),
       bullet("OIDC (OpenID Connect): An authentication layer on top of OAuth 2.0."),
       bullet("JWT: A signed, self-contained token containing 'claims' about a user's identity and permissions."),
+      code(`
+// Example JWT Payload (decoded)
+{
+  "sub": "1234567890",
+  "name": "John Doe",
+  "role": "admin",
+  "iat": 1516239022
+}
+      `),
       space(),
 
       // 8. Redux
@@ -379,6 +421,15 @@ function useDebounce(value, delay) {
       h3("When to use Redux?"),
       bullet("When multiple components, far apart in the tree, need to sync with the same piece of data."),
       bullet("When you need 'Time Travel Debugging' or a globally consistent undo/redo history."),
+      code(`
+const counterSlice = createSlice({
+  name: 'counter',
+  initialState: { value: 0 },
+  reducers: {
+    increment: state => { state.value += 1 }
+  }
+});
+      `),
       space(),
 
       // 9. Lazy Loading
@@ -401,6 +452,13 @@ function useDebounce(value, delay) {
       bullet("Component-based: Large, heavy components (e.g., a Rich Text Editor) are split out and loaded only when the user interacts with them."),
       bullet("Vendor splitting: Bundling all third-party libraries (lodash, d3) into a separate 'vendor.js' file to leverage long-term browser caching."),
       note("Webpack and Vite handle this automatically via dynamic 'import()' syntax."),
+      code(`
+// Component-level splitting
+const RichTextEditor = React.lazy(() => import('./RichTextEditor'));
+
+// Logic splitting
+import('./analytics').then(module => module.sendEvent('page_view'));
+      `),
       space(),
 
       // 11. Bundle Size Optimization
@@ -411,6 +469,10 @@ function useDebounce(value, delay) {
       bullet("Compression: Serving files via Brotli (superior to Gzip) from the server or CDN."),
       bullet("Image Optimization: Serving WebP/AVIF instead of PNG, and using responsive image sizes."),
       bullet("Audit: Use 'webpack-bundle-analyzer' or 'source-map-explorer' to identify 'hidden' large dependencies."),
+      code(`
+// terminal command to analyze bundle
+npx webpack-bundle-analyzer build/stats.json
+      `),
       space(),
 
       // 12. Tree Shaking
@@ -421,6 +483,13 @@ function useDebounce(value, delay) {
       bullet("Side Effects: In package.json, mark your project as 'sideEffects: false' so the bundler knows it can safely remove unused exports."),
       bullet("Atomic Imports: Instead of 'import _ from \"lodash\"', use 'import { debounce } from \"lodash-es\"'."),
       note("Vite and Webpack (in production mode) perform tree shaking automatically, but developer awareness of import patterns is still critical."),
+      code(`
+// Good (Tree-shakeable)
+import { map } from 'lodash-es';
+
+// Bad (Pulls in entire library)
+import _ from 'lodash';
+      `),
       space(),
 
       // 13. Memoization
@@ -432,6 +501,10 @@ function useDebounce(value, delay) {
       bullet("React.memo: A HOC that wraps a component and skips re-renders if its props haven't changed (shallow comparison)."),
       h3("The Cost of Memoization"),
       bullet("Every useMemo/useCallback call has a small overhead (storing dependencies and comparing them). Don't use them for trivial operations."),
+      code(`
+const memoizedValue = useMemo(() => computeExpensiveValue(a, b), [a, b]);
+const memoizedCallback = useCallback(() => doSomething(a, b), [a, b]);
+      `),
       space(),
 
       // 14. Caching
@@ -442,6 +515,10 @@ function useDebounce(value, delay) {
       bullet("CDN Caching: Storing content at the 'Edge' (Vercel, Cloudflare) to reduce the physical distance data travels."),
       bullet("Server-State Caching: Using TanStack Query (React Query) to cache API responses in memory. It provides 'Stale-While-Revalidate' (SWR) logic: show old data, fetch new data, update UI."),
       bullet("Service Workers: Intercepting network requests to provide offline functionality and near-instant loading for repeat visits."),
+      code(`
+// HTTP Cache Header
+Cache-Control: public, max-age=31536000, immutable
+      `),
       space(),
 
       // 15. CSR vs SSR vs SSG vs ISR
@@ -465,6 +542,13 @@ function useDebounce(value, delay) {
       bullet("LCP (Largest Contentful Paint): Measures loading speed. Target: < 2.5s. Optimize by preloading hero images and minimizing blocking JS."),
       bullet("INP (Interaction to Next Paint): Measures responsiveness to every click/keypress. Target: < 200ms. Optimize by yielding to the main thread (requestIdleCallback)."),
       bullet("CLS (Cumulative Layout Shift): Measures visual stability. Target: < 0.1. Optimize by setting 'width/height' on all images and ad-slots."),
+      code(`
+new PerformanceObserver((entryList) => {
+  for (const entry of entryList.getEntries()) {
+    console.log('LCP:', entry.startTime);
+  }
+}).observe({ type: 'largest-contentful-paint', buffered: true });
+      `),
       space(),
 
       // 17. Cross-Browser Compatibility
@@ -475,6 +559,12 @@ function useDebounce(value, delay) {
       bullet("Babel: Transpiles modern JS (ES2022) into older JS (ES6) for compatibility with older Safari or corporate browsers."),
       bullet("Polyfills: 'core-js' adds missing methods like .flatMap() at runtime."),
       bullet("Browserslist: A config file used by all the above to define which browsers you actually care about (e.g., 'last 2 versions')."),
+      code(`
+// .browserslistrc
+last 2 versions
+> 0.5%
+not dead
+      `),
       space(),
 
       // 18. Optimistic UI Updates
@@ -484,6 +574,15 @@ function useDebounce(value, delay) {
       bullet("1. User clicks 'Like'. 2. UI heart turns red immediately. 3. API request is sent. 4. If API fails, UI 'rolls back' to the grey heart and shows a toast notification."),
       h3("Implementation Tip"),
       bullet("TanStack Query makes this easy via the 'onMutate' hook, which allows you to manually update the cache before the network request finishes."),
+      code(`
+// Optimistic update logic
+const onLike = (id) => {
+  setLikes(prev => ({ ...prev, [id]: true })); // Immediate UI update
+  api.like(id).catch(() => {
+    setLikes(prev => ({ ...prev, [id]: false })); // Rollback on error
+  });
+};
+      `),
       space(),
 
       // 19. Suspense
@@ -493,6 +592,11 @@ function useDebounce(value, delay) {
       bullet("Loading States: Wrap any component in <Suspense fallback={<Skeleton />}> to handle its loading state automatically."),
       bullet("Concurrent Rendering: React 18+ can 'interrupt' a long render to handle a user click, keeping the UI responsive."),
       bullet("Transitions: 'startTransition' allows you to mark a state update as 'non-urgent' so it doesn't trigger a loading spinner for fast users."),
+      code(`
+<Suspense fallback={<LoadingSpinner />}>
+  <UserProfile />
+</Suspense>
+      `),
       space(),
 
       // 20. Image Optimization
@@ -503,6 +607,13 @@ function useDebounce(value, delay) {
       bullet("Responsive Images: Using the <picture> element and 'srcset' to send a small image to a phone and a high-res image to a Retina display."),
       bullet("Lazy Loading: Using 'loading=\"lazy\"' so the browser doesn't download images until they are near the viewport."),
       bullet("CDN: Using services like Cloudinary to resize and compress images on the fly via URL parameters."),
+      code(`
+<picture>
+  <source srcset="image.avif" type="image/avif" />
+  <source srcset="image.webp" type="image/webp" />
+  <img src="image.jpg" alt="Description" loading="lazy" />
+</picture>
+      `),
       space(),
 
       // 21. Accessibility (a11y)
@@ -513,6 +624,14 @@ function useDebounce(value, delay) {
       bullet("ARIA: Using 'aria-label' and 'aria-expanded' to describe custom components (like a custom dropdown) that aren't native HTML."),
       bullet("Focus Management: Ensuring that when a modal opens, the 'focus' moves inside it and stays there (focus trap) until closed."),
       bullet("Contrast: Meeting WCAG AA standards (4.5:1 ratio) for text readability."),
+      code(`
+<button 
+  aria-label="Close modal" 
+  onClick={onClose}
+>
+  <Icon name="close" />
+</button>
+      `),
       space(),
 
       // 22. Webpack
@@ -523,6 +642,15 @@ function useDebounce(value, delay) {
       bullet("Loaders: Transform non-JS files (CSS, Images, TypeScript) into JS modules."),
       bullet("Plugins: Perform high-level tasks like 'Tree Shaking', 'Code Splitting', and 'Minification'."),
       bullet("DevServer: Provides Hot Module Replacement (HMR) for a fast developer loop."),
+      code(`
+// webpack.config.js snippet
+module.exports = {
+  entry: './src/index.js',
+  module: {
+    rules: [{ test: /\\.js$/, use: 'babel-loader' }]
+  }
+};
+      `),
       space(),
 
       // 23. Micro-frontend Architecture
@@ -543,6 +671,12 @@ function useDebounce(value, delay) {
       bullet("Unit (Jest): Testing small logic functions and hooks in isolation. Fast and reliable."),
       bullet("Integration (React Testing Library): Testing components as the user would. Instead of checking 'state', check if the 'Submit' button exists and is clickable."),
       bullet("E2E (Playwright): Testing the full user journey in a real browser. Does the user get to the 'Success' page after checkout?"),
+      code(`
+test('renders welcome message', () => {
+  render(<App />);
+  expect(screen.getByText(/welcome/i)).toBeInTheDocument();
+});
+      `),
       space(),
 
       // 25. Polyfills & Babel
@@ -552,6 +686,12 @@ function useDebounce(value, delay) {
       bullet("Babel (Transpiler): Changes 'Syntax'. It turns 'const' into 'var' and arrow functions into regular functions."),
       bullet("Polyfills (Runtime): Adds 'Features'. If a browser doesn't have 'Array.prototype.includes', a polyfill provides the missing code."),
       bullet("@babel/preset-env: A smart preset that looks at your 'browserslist' and automatically decides which transpilation and polyfills are needed."),
+      code(`
+// babel.config.json
+{
+  "presets": [["@babel/preset-env", { "useBuiltIns": "usage", "corejs": 3 }]]
+}
+      `),
       space(),
 
       new Paragraph({ children: [new PageBreak()] }),
@@ -568,6 +708,16 @@ function useDebounce(value, delay) {
       bullet("Props — immutable data passed from parent to child. Props flow downward; callbacks enable child-to-parent communication."),
       bullet("Virtual DOM — a lightweight in-memory representation of the real DOM. React diffs the old and new virtual trees on each render and commits only the minimal set of DOM operations needed (reconciliation)."),
       bullet("Reconciliation — React's algorithm (Fiber) for comparing component trees and determining the minimal set of UI updates."),
+      code(`
+function Welcome({ name }) {
+  const [count, setCount] = useState(0);
+  return (
+    <button onClick={() => setCount(count + 1)}>
+      Hello {name}, clicked {count} times
+    </button>
+  );
+}
+      `),
       space(),
 
       h2("1.2 JSX"),
@@ -576,6 +726,15 @@ function useDebounce(value, delay) {
       bullet("Expressions are embedded with {}. Conditionals use ternary or &&; loops use .map()."),
       bullet("className replaces class; htmlFor replaces for; camelCase is used for event handlers (onClick, onChange)."),
       bullet("Babel or a modern bundler transpiles JSX before it reaches the browser."),
+      code(`
+<ul>
+  {items.length > 0 ? (
+    items.map(item => <li key={item.id}>{item.name}</li>)
+  ) : (
+    <li>No items found</li>
+  )}
+</ul>
+      `),
       space(),
 
       h2("1.3 React Portals & Fragments"),
@@ -645,14 +804,30 @@ useEffect(() => {
 
       h3("useReducer"),
       body("Manages complex state with a reducer function (state, action) => newState — similar to Redux but local. Prefer over useState when state transitions depend on multiple sub-values."),
+      code(`
+const [state, dispatch] = useReducer((state, action) => {
+  switch (action.type) {
+    case 'increment': return { count: state.count + 1 };
+    default: throw new Error();
+  }
+}, { count: 0 });
+      `),
       space(),
 
       h3("useRef"),
       body("Creates a mutable ref object whose .current property persists across renders without triggering re-renders. Used for DOM element access, storing previous values, and imperative APIs."),
+      code(`
+const inputRef = useRef(null);
+const focusInput = () => inputRef.current.focus();
+      `),
       space(),
 
       h3("useContext"),
       body("Consumes a context value created by React.createContext(). Avoids prop drilling for globally relevant data like themes, auth state, or locale."),
+      code(`
+const ThemeContext = createContext('light');
+const theme = useContext(ThemeContext);
+      `),
       space(),
 
       h3("useParams (React Router)"),
@@ -734,6 +909,14 @@ useEffect(() => {
       bullet("useNavigate — programmatic navigation."),
       bullet("Outlet — renders matched child routes in nested layouts."),
       bullet("loader / action functions (v6.4+) — co-locate data fetching with routes (similar to Next.js getServerSideProps)."),
+      code(`
+<BrowserRouter>
+  <Routes>
+    <Route path="/" element={<Home />} />
+    <Route path="users/:id" element={<User />} />
+  </Routes>
+</BrowserRouter>
+      `),
       space(),
       body("Route guards are implemented by wrapping Route children in components that check auth state and redirect using <Navigate> if access is denied."),
 
@@ -863,6 +1046,12 @@ useEffect(() => {
       bullet("Automatic JSON serialisation/deserialisation — no need to call .json() manually."),
       bullet("Request cancellation via AbortController (Axios 1.x) or CancelToken (legacy)."),
       bullet("Consistent API across browsers including older ones."),
+      code(`
+axios.interceptors.request.use(config => {
+  config.headers.Authorization = \`Bearer \${token}\`;
+  return config;
+});
+      `),
       note("For new projects, consider pairing the native fetch() with React Query rather than adding Axios — this eliminates a dependency while React Query provides caching, retries, and loading states."),
       space(),
 
@@ -873,6 +1062,13 @@ useEffect(() => {
       bullet("Socket.IO adds rooms, namespaces, automatic reconnection, and fallback to long-polling."),
       bullet("In React, open the WebSocket in useEffect and close it in the cleanup function to avoid memory leaks."),
       bullet("For read-heavy real-time data (feeds, notifications), Server-Sent Events (SSE) may be a simpler alternative."),
+      code(`
+useEffect(() => {
+  const ws = new WebSocket('ws://link');
+  ws.onmessage = (e) => setData(JSON.parse(e.data));
+  return () => ws.close();
+}, []);
+      `),
       space(),
 
       h2("6.4 Caching (Client + Server)"),
@@ -948,7 +1144,13 @@ useEffect(() => {
       bullet("revalidate in getStaticProps — enables ISR."),
       bullet("app/ directory (Next.js 13+) — introduces React Server Components (RSC), which render on the server with zero client JS by default."),
       bullet("Middleware — runs at the edge before the request reaches a page, ideal for auth guards and A/B testing."),
-
+      code(`
+      export async function getServerSideProps() {
+      const data = await fetchData();
+      return { props: { data } };
+      }
+      `),
+      space(),
       new Paragraph({ children: [new PageBreak()] }),
 
       // ═══════════════════════════════════════════
@@ -971,6 +1173,12 @@ useEffect(() => {
       bullet("Production — Rollup-based bundler with tree shaking, code splitting, and optimised output."),
       bullet("Significantly faster cold starts compared to Webpack for large projects."),
       bullet("First-class React support via @vitejs/plugin-react (Babel) or @vitejs/plugin-react-swc (SWC — even faster)."),
+      code(`
+// vite.config.js
+export default {
+  plugins: [react()]
+};
+      `),
       space(),
 
       h2("9.3 Polyfills & Babel"),
@@ -1016,6 +1224,10 @@ useEffect(() => {
       bullet("og:title, og:description, og:image, og:url are the essential tags."),
       bullet("In React SPAs, use react-helmet or Next.js <Head> to inject these tags dynamically per page."),
       bullet("Crucial for SEO and social sharing — a missing og:image means no preview thumbnail on Twitter/LinkedIn."),
+      code(`
+<meta property="og:title" content="Page Title" />
+<meta property="og:image" content="https://example.com/image.jpg" />
+      `),
       space(),
 
       h2("10.3 Time-Travel Debugging"),
@@ -1045,6 +1257,11 @@ useEffect(() => {
       bullet("jest.fn() creates mock functions; jest.mock() mocks entire modules."),
       bullet("Snapshot testing with toMatchSnapshot() captures component output for regression detection."),
       bullet("Code coverage with --coverage flag; configure thresholds in jest.config."),
+      code(`
+test('adds 1 + 2 to equal 3', () => {
+  expect(sum(1, 2)).toBe(3);
+});
+      `),
       space(),
 
       h2("11.3 React Testing Library (RTL)"),
@@ -1053,6 +1270,11 @@ useEffect(() => {
       bullet("userEvent.click(), userEvent.type() simulate realistic user interactions."),
       bullet("waitFor() and findBy* queries handle async rendering and data fetching."),
       bullet("Never test implementation details (state variables, internal methods) — test observable behaviour."),
+      code(`
+render(<MyButton />);
+const btn = screen.getByRole('button', { name: /submit/i });
+fireEvent.click(btn);
+      `),
       space(),
 
       h2("11.4 Playwright"),
@@ -1062,7 +1284,11 @@ useEffect(() => {
       bullet("Network interception — mock API responses to test loading/error states reliably."),
       bullet("Visual regression testing — compare screenshots across builds to catch unintended UI changes."),
       bullet("Codegen — record user interactions to generate test boilerplate automatically."),
-
+      code(`
+      await page.goto('https://example.com');
+      await page.getByRole('button', { name: 'Log in' }).click();
+      `),
+      space(),
       new Paragraph({ children: [new PageBreak()] }),
 
       // ═══════════════════════════════════════════
@@ -1080,6 +1306,11 @@ useEffect(() => {
       bullet("Colour contrast — text must meet WCAG AA ratio of 4.5:1 for normal text, 3:1 for large text."),
       bullet("Focus management — after opening a modal or dialog, move focus into it; return focus when it closes."),
       bullet("Alternative text — all meaningful images need descriptive alt text; decorative images need alt=''."),
+      code(`
+<nav aria-label="Primary">
+  <ul>...</ul>
+</nav>
+      `),
       space(),
 
       h2("12.3 Tooling"),
@@ -1100,6 +1331,15 @@ useEffect(() => {
       bullet("Supports tile layers (OpenStreetMap, Bing, custom WMS/WMTS), vector layers, and overlays."),
       bullet("Projections, coordinate transforms, and feature selection are built in."),
       bullet("For React-native map integration, react-ol (ol-react) provides component wrappers."),
+      code(`
+useEffect(() => {
+  const map = new Map({
+    target: mapRef.current,
+    layers: [new TileLayer({ source: new OSM() })]
+  });
+  return () => map.setTarget(null);
+}, []);
+      `),
       space(),
 
       h2("13.2 Rules of Hooks"),
